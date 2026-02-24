@@ -113,7 +113,6 @@ local config = {
     bossThreads = 1,
     enemyThreads = 1,
     foodThreads = 5,
-    foodBatchSize = 5,
 }
 
 local bossList = {
@@ -250,40 +249,30 @@ end
 
 local function collectFoodFromZone(zoneName)
     local zone = getZone(zoneName)
-    if zone and zone:FindFirstChild("FoodSpawns") then
-        local foods = zone.FoodSpawns:GetChildren()
-        local pets = getPets()
-        local petCount = #pets
-        if petCount == 0 or #foods == 0 then return end
-        
-        for batch = 1, config.foodBatchSize do
-            for i = 1, petCount do
-                local food = foods[((i-1) % #foods) + 1]
-                safeCollectFood(food, pets[i])
-            end
-            task.wait(0.01)
-        end
+    if not zone then return end
+    local foodSpawns = zone:FindFirstChild("FoodSpawns")
+    if not foodSpawns then return end
+    
+    local foods = foodSpawns:GetChildren()
+    local pets = getPets()
+    if #pets == 0 or #foods == 0 then return end
+    
+    for i, pet in ipairs(pets) do
+        local food = foods[((i-1) % #foods) + 1]
+        safeCollectFood(food, pet)
     end
 end
 
 local function foodWorker()
     while active do
         if config.farmFood then
-            local anyFoodActive = false
             for _, foodZone in ipairs(foodZones) do
                 if foodZone.enabled then
-                    anyFoodActive = true
                     collectFoodFromZone(foodZone.zone)
                 end
             end
-            if anyFoodActive then
-                task.wait(0.05)
-            else
-                task.wait(1)
-            end
-        else
-            task.wait(2)
         end
+        task.wait()
     end
 end
 
@@ -503,7 +492,7 @@ local function start()
     
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Maveryk Hub",
-        Text = "Farm iniciado! Food com prioridade máxima.",
+        Text = "Farm iniciado! Food contínuo.",
         Duration = 3
     })
 end
@@ -518,7 +507,7 @@ end
 local win = Rayfield:CreateWindow({
     Name = "Maveryk Hub",
     LoadingTitle = "Pet Swarm Sim",
-    LoadingSubtitle = "Ultra Rápido 0.001s",
+    LoadingSubtitle = "Food Contínuo",
     ConfigurationSaving = { Enabled = true, FolderName = "MaverykHub", FileName = "Config" },
     Theme = "Dark"
 })
@@ -612,13 +601,6 @@ foodTab:CreateSlider({
     CurrentValue = config.foodThreads,
     Callback = function(v) config.foodThreads = v end
 })
-foodTab:CreateSlider({
-    Name = "Food Batch Size (coletas por ciclo)",
-    Range = {1, 20},
-    Increment = 1,
-    CurrentValue = config.foodBatchSize,
-    Callback = function(v) config.foodBatchSize = v end
-})
 foodTab:CreateToggle({ Name = "Crystal Food", CurrentValue = foodZones[1].enabled, Callback = function(v) foodZones[1].enabled = v end })
 foodTab:CreateToggle({ Name = "Draco Food", CurrentValue = foodZones[2].enabled, Callback = function(v) foodZones[2].enabled = v end })
 
@@ -647,7 +629,7 @@ end
 
 local eggTab = win:CreateTab("Eggs")
 eggTab:CreateSection("Eggs Control - Ultra Rápido")
-eggTab:CreateLabel("⚡ 0.001s com controle de fluxo")
+eggTab:CreateLabel("⚡ 0.001s")
 eggTab:CreateToggle({ Name = "Auto Plant", CurrentValue = config.autoPlant, Callback = function(v) config.autoPlant = v end })
 eggTab:CreateToggle({ Name = "Auto Hatch", CurrentValue = config.autoHatch, Callback = function(v) config.autoHatch = v end })
 eggTab:CreateToggle({ Name = "Auto Nests", CurrentValue = config.autoNests, Callback = function(v) config.autoNests = v end })
@@ -860,6 +842,6 @@ end)
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Maveryk Hub",
-    Text = "Carregado! Food com prioridade máxima.",
+    Text = "Carregado! Food contínuo ativado.",
     Duration = 3
 })
