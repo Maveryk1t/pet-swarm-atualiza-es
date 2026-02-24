@@ -1,4 +1,4 @@
-local Rayfield = loadstring(game:HttpGet('https://irius.menu/rayfield'))()
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -112,7 +112,7 @@ local config = {
     nestsSpeed = 0.001,
     bossThreads = 1,
     enemyThreads = 1,
-    foodThreads = 1,  -- Apenas 1 thread para food, mas extremamente rápida
+    foodThreads = 1,
 }
 
 local bossList = {
@@ -247,7 +247,6 @@ local function attackBosses()
     end
 end
 
--- Versão ultra-rápida de coleta de comida (usando todos os pets, cada um em um food diferente)
 local function collectFoodUltraFast(zoneName)
     local zone = getZone(zoneName)
     if not zone then return end
@@ -259,7 +258,6 @@ local function collectFoodUltraFast(zoneName)
     local petCount = #pets
     if petCount == 0 or #foods == 0 then return end
     
-    -- Distribui cada pet para um food diferente (circular)
     for i = 1, petCount do
         local food = foods[((i-1) % #foods) + 1]
         local pet = pets[i]
@@ -267,7 +265,6 @@ local function collectFoodUltraFast(zoneName)
     end
 end
 
--- Worker de food sem pausas (apenas um task.wait() mínimo para não travar)
 local function foodWorker()
     while active do
         if config.farmFood then
@@ -277,7 +274,7 @@ local function foodWorker()
                 end
             end
         end
-        task.wait(0.001)  -- Mínimo possível para liberar a thread
+        task.wait(0.001)
     end
 end
 
@@ -482,7 +479,7 @@ local function start()
     spawnWorkers(ultraHatchWorker, 1)
     spawnWorkers(ultraPlantWorker, 1)
     spawnWorkers(ultraNestsWorker, 1)
-    spawnWorkers(foodWorker, config.foodThreads)  -- Apenas 1 thread para food (ultra rápida)
+    spawnWorkers(foodWorker, config.foodThreads)
     spawnWorkers(bossesWorker, config.bossThreads)
     spawnWorkers(enemiesWorker, config.enemyThreads)
     task.spawn(bossScanWorker)
