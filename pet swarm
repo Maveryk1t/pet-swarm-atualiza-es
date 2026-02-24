@@ -1,4 +1,4 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Rayfield = loadstring(game:HttpGet('https://irius.menu/rayfield'))()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -112,7 +112,7 @@ local config = {
     nestsSpeed = 0.001,
     bossThreads = 1,
     enemyThreads = 1,
-    foodThreads = 5,
+    foodThreads = 1,  -- Apenas 1 thread para food, mas extremamente rápida
 }
 
 local bossList = {
@@ -247,7 +247,8 @@ local function attackBosses()
     end
 end
 
-local function collectFoodFromZone(zoneName)
+-- Versão ultra-rápida de coleta de comida (usando todos os pets, cada um em um food diferente)
+local function collectFoodUltraFast(zoneName)
     local zone = getZone(zoneName)
     if not zone then return end
     local foodSpawns = zone:FindFirstChild("FoodSpawns")
@@ -255,24 +256,28 @@ local function collectFoodFromZone(zoneName)
     
     local foods = foodSpawns:GetChildren()
     local pets = getPets()
-    if #pets == 0 or #foods == 0 then return end
+    local petCount = #pets
+    if petCount == 0 or #foods == 0 then return end
     
-    for i, pet in ipairs(pets) do
+    -- Distribui cada pet para um food diferente (circular)
+    for i = 1, petCount do
         local food = foods[((i-1) % #foods) + 1]
+        local pet = pets[i]
         safeCollectFood(food, pet)
     end
 end
 
+-- Worker de food sem pausas (apenas um task.wait() mínimo para não travar)
 local function foodWorker()
     while active do
         if config.farmFood then
             for _, foodZone in ipairs(foodZones) do
                 if foodZone.enabled then
-                    collectFoodFromZone(foodZone.zone)
+                    collectFoodUltraFast(foodZone.zone)
                 end
             end
         end
-        task.wait()
+        task.wait(0.001)  -- Mínimo possível para liberar a thread
     end
 end
 
@@ -477,7 +482,7 @@ local function start()
     spawnWorkers(ultraHatchWorker, 1)
     spawnWorkers(ultraPlantWorker, 1)
     spawnWorkers(ultraNestsWorker, 1)
-    spawnWorkers(foodWorker, config.foodThreads)
+    spawnWorkers(foodWorker, config.foodThreads)  -- Apenas 1 thread para food (ultra rápida)
     spawnWorkers(bossesWorker, config.bossThreads)
     spawnWorkers(enemiesWorker, config.enemyThreads)
     task.spawn(bossScanWorker)
@@ -492,7 +497,7 @@ local function start()
     
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Maveryk Hub",
-        Text = "Farm iniciado! Food contínuo.",
+        Text = "Farm iniciado! Food ultra rápido.",
         Duration = 3
     })
 end
@@ -507,7 +512,7 @@ end
 local win = Rayfield:CreateWindow({
     Name = "Maveryk Hub",
     LoadingTitle = "Pet Swarm Sim",
-    LoadingSubtitle = "Food Contínuo",
+    LoadingSubtitle = "Food Ultra Rápido",
     ConfigurationSaving = { Enabled = true, FolderName = "MaverykHub", FileName = "Config" },
     Theme = "Dark"
 })
@@ -596,7 +601,7 @@ foodTab:CreateSection("Food Zones")
 foodTab:CreateToggle({ Name = "Enable Food", CurrentValue = config.farmFood, Callback = function(v) config.farmFood = v end })
 foodTab:CreateSlider({
     Name = "Food Threads",
-    Range = {1, 10},
+    Range = {1, 5},
     Increment = 1,
     CurrentValue = config.foodThreads,
     Callback = function(v) config.foodThreads = v end
@@ -842,6 +847,6 @@ end)
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Maveryk Hub",
-    Text = "Carregado! Food contínuo ativado.",
+    Text = "Carregado! Food ultra rápido.",
     Duration = 3
 })
